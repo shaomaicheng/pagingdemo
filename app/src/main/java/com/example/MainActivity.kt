@@ -19,6 +19,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import java.util.concurrent.Executor
+import java.util.stream.Collector
+import java.util.stream.Collectors
 
 
 class MainActivity : AppCompatActivity() {
@@ -37,7 +39,7 @@ class MainActivity : AppCompatActivity() {
 
         val config = PagedList.Config.Builder()
                 .setPageSize(3)
-                .setPrefetchDistance(5)
+                .setPrefetchDistance(10)
                 .setEnablePlaceholders(false)
                 .build()
 
@@ -58,6 +60,7 @@ class MainActivity : AppCompatActivity() {
 
         // setlist
         pagedListAdapter.submitList(pageList)
+        Log.e("pagelist", pageList.size.toString())
 
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             private var lastPositon=-1
@@ -116,27 +119,33 @@ class MainThreadTask : Executor {
 class MyDataSource : PositionalDataSource<DataBean>() {
     private fun computeCount(): Int {
         // actual count code here
-        return 1
-    }
-    override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<DataBean>) {
-        callback.onResult(loadRangeInternal(params.startPosition, params.loadSize))
-
+        return 2
     }
 
     private fun loadRangeInternal(start: Int, count : Int) : MutableList<DataBean> {
         return loadData(start, count)
     }
 
+    override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<DataBean>) {
+        Log.e("loadRangeParams", "startPosition:${params.startPosition}; loadSize:${params.loadSize}")
+        callback.onResult(loadRangeInternal(params.startPosition, params.loadSize))
+
+    }
+
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<DataBean>) {
         val count = computeCount()
         val position = computeInitialLoadPosition(params, count)
         val loadSize = computeInitialLoadSize(params, position, count)
+        Log.e("loadInitial", "position: $position; loadSize: $loadSize")
         callback.onResult(loadRangeInternal(position, loadSize), position, count)
     }
 
 }
 
 fun loadData(startPosition: Int, count: Int) : MutableList<DataBean> {
+    if (startPosition > 100) {
+        return mutableListOf()
+    }
     Log.e("loaddata=>", "startpo:$startPosition;count:$count")
     val list = mutableListOf<DataBean>()
     var i = 0
